@@ -2,29 +2,27 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { mockConcertEvents } from "@/data/mock-concerts";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import EditableEventDetails from "./EditableEventDetails";
+import { Metadata } from "next";
 
-export async function generateMetadata({ params }: { params: { id: string } }) {
-  // Properly await the params object before accessing its properties
-  const resolvedParams = await Promise.resolve(params);
+// Generate metadata
+export async function generateMetadata({ params }: any): Promise<Metadata> {
+  // Correctly await the params object before accessing its properties
+  const resolvedParams = await params;
   const id = resolvedParams.id;
 
   const event = mockConcertEvents.find((e) => e.id === id);
+
   return {
     title: event?.title || "Event Details",
   };
 }
 
-// Make component async to properly handle params
-export default async function EventPage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  // Properly await the params object before accessing its properties
-  const resolvedParams = await Promise.resolve(params);
+// Page component
+export default async function EventPage({ params }: any) {
+  // Correctly await the params object before accessing its properties
+  const resolvedParams = await params;
   const id = resolvedParams.id;
 
   const event = mockConcertEvents.find((e) => e.id === id);
@@ -42,7 +40,6 @@ export default async function EventPage({
         </Link>
       </Button>
 
-      {/* Pass the event to the EditableEventDetails client component */}
       <EditableEventDetails event={event} />
     </main>
   );

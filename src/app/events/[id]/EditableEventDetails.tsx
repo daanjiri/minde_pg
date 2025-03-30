@@ -5,13 +5,6 @@ import { Edit2, Save, X, Plus, Trash2 } from "lucide-react";
 import { ConcertEvent } from "@/data/mock-concerts";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
