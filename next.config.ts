@@ -1,7 +1,24 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  /* config options here */
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "example.com",
+        pathname: "/images/**",
+      },
+      {
+        protocol: "https",
+        hostname: "mystorage.blob.core.windows.net",
+        pathname: "/events/**",
+      },
+      {
+        protocol: "https",
+        hostname: "api.dicebear.com",
+        pathname: "/7.x/**",
+      },
+    ],
+  },
 };
 
 export default nextConfig;
