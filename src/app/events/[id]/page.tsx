@@ -1,46 +1,96 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { mockConcertEvents } from "@/data/mock-concerts";
 import { Button } from "@/components/ui/button";
 import EditableEventDetails from "./EditableEventDetails";
 import { Metadata } from "next";
 
+// Interface for Event
+interface Location {
+  ciudad: string;
+  direccion_o_nombre_del_lugar: string;
+}
+
+interface Event {
+  id: string;
+  nombre_del_evento: string;
+  artistas: string[];
+  lugares: Location[];
+  fechas: string[];
+  precios: number[];
+  fuente: string;
+  url: string;
+  search_criteria: string;
+  timestamp: string;
+  otros_campos: Record<string, any>;
+  imagenes: string[];
+}
+
 // Generate metadata
-export async function generateMetadata({ params }: any): Promise<Metadata> {
-  // Correctly await the params object before accessing its properties
-  const resolvedParams = await params;
-  const id = resolvedParams.id;
+export async function generateMetadata({
+  params,
+}: {
+  params: { id: string };
+}): Promise<Metadata> {
+  const resolvedParams = await Promise.resolve(params);
+  const hashid = resolvedParams.id;
 
-  const event = mockConcertEvents.find((e) => e.id === id);
+  try {
+    const response = await fetch(
+      `https://pulepia-test.azurewebsites.net/event?hashid=${hashid}`,
+      { cache: "no-store" }
+    );
+    if (!response.ok) {
+      return { title: "Event Details" };
+    }
+    const event = await response.json();
 
-  return {
-    title: event?.title || "Event Details",
-  };
+    return {
+      title: event.nombre_del_evento || "Event Details",
+    };
+  } catch (error) {
+    console.error("Error fetching event for metadata:", error);
+    return { title: "Event Details" };
+  }
 }
 
 // Page component
-export default async function EventPage({ params }: any) {
-  // Correctly await the params object before accessing its properties
-  const resolvedParams = await params;
-  const id = resolvedParams.id;
+export default async function EventPage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  const resolvedParams = await Promise.resolve(params);
+  const hashid = resolvedParams.id;
 
-  const event = mockConcertEvents.find((e) => e.id === id);
+  try {
+    const response = await fetch(
+      `https://pulepia-test.azurewebsites.net/event?hashid=${hashid}`,
+      { cache: "no-store" }
+    );
 
-  if (!event) {
+    if (!response.ok) {
+      console.error(`Failed to fetch event with hashid: ${hashid}`);
+      notFound();
+    }
+
+    const event = await response.json();
+    console.log("Fetched event:", event);
+
+    return (
+      <main className="container mx-auto py-8 px-4">
+        <Button variant="ghost" asChild className="mb-6">
+          <Link href="/" className="flex items-center">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Events
+          </Link>
+        </Button>
+
+        <EditableEventDetails event={event} />
+      </main>
+    );
+  } catch (error) {
+    console.error("Error fetching event:", error);
     notFound();
   }
-
-  return (
-    <main className="container mx-auto py-8 px-4">
-      <Button variant="ghost" asChild className="mb-6">
-        <Link href="/" className="flex items-center">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Events
-        </Link>
-      </Button>
-
-      <EditableEventDetails event={event} />
-    </main>
-  );
 }

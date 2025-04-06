@@ -2,41 +2,20 @@
 
 import { useState } from "react";
 import { Edit2, Save, X, Plus, Trash2 } from "lucide-react";
+import { ConcertEvent } from "@/data/mock-concerts";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
-// API Event Interface
-interface Location {
-  ciudad: string;
-  direccion_o_nombre_del_lugar: string;
-}
-
-interface Event {
-  id: string;
-  nombre_del_evento: string;
-  artistas: string[];
-  lugares: Location[];
-  fechas: string[];
-  precios: number[];
-  fuente: string;
-  url: string;
-  search_criteria: string;
-  timestamp: string;
-  otros_campos: Record<string, any>;
-  imagenes: string[];
-}
-
 interface EditableEventDetailsProps {
-  event: Event;
+  event: ConcertEvent;
 }
 
 export default function EditableEventDetails({
   event: initialEvent,
 }: EditableEventDetailsProps) {
-  const [event, setEvent] = useState<Event>(initialEvent);
-  console.log("initialEvent:::", initialEvent);
+  const [event, setEvent] = useState<ConcertEvent>(initialEvent);
 
   // State for each editable field
   const [editingTitle, setEditingTitle] = useState(false);
@@ -46,14 +25,10 @@ export default function EditableEventDetails({
   const [addingArtist, setAddingArtist] = useState(false);
 
   // Temporary values while editing
-  const [tempTitle, setTempTitle] = useState(event.nombre_del_evento || "");
-  const [tempDate, setTempDate] = useState(
-    event.fechas && event.fechas[0]
-      ? new Date(event.fechas[0]).toISOString().split("T")[0]
-      : ""
-  );
+  const [tempTitle, setTempTitle] = useState(event.title || "");
+  const [tempDate, setTempDate] = useState(event.date || "");
   const [tempDescription, setTempDescription] = useState(
-    event.otros_campos?.description || ""
+    event.description || ""
   );
   const [tempArtistName, setTempArtistName] = useState("");
   const [tempArtistGenre, setTempArtistGenre] = useState("");
@@ -64,42 +39,50 @@ export default function EditableEventDetails({
 
   // Save changes to title
   const saveTitle = () => {
-    setEvent({ ...event, nombre_del_evento: tempTitle });
+    setEvent({ ...event, title: tempTitle });
     setEditingTitle(false);
   };
 
   // Save changes to date
   const saveDate = () => {
-    const updatedFechas = [...(event.fechas || [])];
-    updatedFechas[0] = tempDate ? new Date(tempDate).toISOString() : "";
-    setEvent({ ...event, fechas: updatedFechas });
+    setEvent({ ...event, date: tempDate });
     setEditingDate(false);
   };
 
   // Save changes to description
   const saveDescription = () => {
-    setEvent({
-      ...event,
-      otros_campos: { ...event.otros_campos, description: tempDescription },
-    });
+    setEvent({ ...event, description: tempDescription });
     setEditingDescription(false);
   };
 
   // Save changes to artist
   const saveArtist = (index: number) => {
-    if (event.artistas && event.artistas[index]) {
-      const updatedArtistas = [...event.artistas];
-      updatedArtistas[index] = tempArtistName;
-      setEvent({ ...event, artistas: updatedArtistas });
+    if (event.artist_details && event.artist_details[index]) {
+      const updatedArtistDetails = [...(event.artist_details || [])];
+      updatedArtistDetails[index] = {
+        ...updatedArtistDetails[index],
+        name: tempArtistName,
+        genre: tempArtistGenre,
+      };
+
+      // Also update the artist array
+      const updatedArtists = [...(event.artist || [])];
+      updatedArtists[index] = tempArtistName;
+
+      setEvent({
+        ...event,
+        artist: updatedArtists,
+        artist_details: updatedArtistDetails,
+      });
     }
     setEditingArtist(null);
   };
 
   // Start editing an artist
   const startEditingArtist = (index: number) => {
-    if (event.artistas && event.artistas[index]) {
-      setTempArtistName(event.artistas[index]);
-      setTempArtistGenre(""); // No genre in API data
+    if (event.artist_details && event.artist_details[index]) {
+      setTempArtistName(event.artist_details[index].name);
+      setTempArtistGenre(event.artist_details[index].genre);
       setEditingArtist(index);
     }
   };
@@ -108,13 +91,27 @@ export default function EditableEventDetails({
   const addArtist = () => {
     if (newArtistName.trim() === "") return;
 
+    // Create new artist details
+    const newArtistDetail = {
+      name: newArtistName,
+      genre: newArtistGenre || "Unknown",
+      popularity: "Medium",
+    };
+
     // Update artists array
-    const updatedArtistas = [...(event.artistas || []), newArtistName];
+    const updatedArtists = [...(event.artist || []), newArtistName];
+
+    // Update artist details array
+    const updatedArtistDetails = [
+      ...(event.artist_details || []),
+      newArtistDetail,
+    ];
 
     // Update event
     setEvent({
       ...event,
-      artistas: updatedArtistas,
+      artist: updatedArtists,
+      artist_details: updatedArtistDetails,
     });
 
     // Reset form
@@ -125,27 +122,20 @@ export default function EditableEventDetails({
 
   // Remove an artist
   const removeArtist = (index: number) => {
-    // Clone array to not mutate the state directly
-    const updatedArtistas = [...(event.artistas || [])];
+    // Clone arrays to not mutate the state directly
+    const updatedArtists = [...(event.artist || [])];
+    const updatedArtistDetails = [...(event.artist_details || [])];
 
     // Remove the artist at the specified index
-    updatedArtistas.splice(index, 1);
+    updatedArtists.splice(index, 1);
+    updatedArtistDetails.splice(index, 1);
 
     // Update the event
     setEvent({
       ...event,
-      artistas: updatedArtistas,
+      artist: updatedArtists,
+      artist_details: updatedArtistDetails,
     });
-  };
-
-  // Format date for display
-  const formatDate = (dateString: string) => {
-    if (!dateString || dateString === "null") return "Date not available";
-    try {
-      return new Date(dateString).toLocaleDateString();
-    } catch (error) {
-      return dateString;
-    }
   };
 
   return (
@@ -174,12 +164,12 @@ export default function EditableEventDetails({
             </div>
           ) : (
             <div className="flex items-center">
-              <h1 className="text-3xl font-bold">{event.nombre_del_evento}</h1>
+              <h1 className="text-3xl font-bold">{event.title}</h1>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => {
-                  setTempTitle(event.nombre_del_evento || "");
+                  setTempTitle(event.title || "");
                   setEditingTitle(true);
                 }}
               >
@@ -213,17 +203,13 @@ export default function EditableEventDetails({
           ) : (
             <>
               <div className="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded text-sm mr-2">
-                {formatDate(event.fechas?.[0] || "")}
+                {event.date || "Date not available"}
               </div>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => {
-                  const dateValue =
-                    event.fechas && event.fechas[0]
-                      ? new Date(event.fechas[0]).toISOString().split("T")[0]
-                      : "";
-                  setTempDate(dateValue);
+                  setTempDate(event.date || "");
                   setEditingDate(true);
                 }}
               >
@@ -242,7 +228,7 @@ export default function EditableEventDetails({
               variant="ghost"
               size="icon"
               onClick={() => {
-                setTempDescription(event.otros_campos?.description || "");
+                setTempDescription(event.description || "");
                 setEditingDescription(true);
               }}
             >
@@ -273,7 +259,7 @@ export default function EditableEventDetails({
             </div>
           ) : (
             <p className="text-gray-700 dark:text-gray-300">
-              {event.otros_campos?.description || "No description available"}
+              {event.description || "No description available"}
             </p>
           )}
         </div>
@@ -329,14 +315,16 @@ export default function EditableEventDetails({
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {event.artistas?.length ? (
-              event.artistas.map((artist, index) => (
+            {event.artist_details?.length ? (
+              event.artist_details.map((artist, index) => (
                 <div
                   key={index}
                   className="flex items-center p-4 border rounded-lg dark:border-gray-700"
                 >
                   <Avatar className="h-10 w-10 mr-4">
-                    <AvatarFallback>{artist.substring(0, 2)}</AvatarFallback>
+                    <AvatarFallback>
+                      {artist.name.substring(0, 2)}
+                    </AvatarFallback>
                   </Avatar>
 
                   {editingArtist === index ? (
@@ -346,6 +334,12 @@ export default function EditableEventDetails({
                         onChange={(e) => setTempArtistName(e.target.value)}
                         className="mb-2"
                         placeholder="Artist name"
+                      />
+                      <Input
+                        value={tempArtistGenre}
+                        onChange={(e) => setTempArtistGenre(e.target.value)}
+                        className="mb-2"
+                        placeholder="Genre"
                       />
                       <div className="flex gap-2 justify-end">
                         <Button
@@ -367,7 +361,8 @@ export default function EditableEventDetails({
                   ) : (
                     <div className="flex flex-1 justify-between items-start">
                       <div>
-                        <p className="font-medium">{artist}</p>
+                        <p className="font-medium">{artist.name}</p>
+                        <p className="text-sm text-gray-500">{artist.genre}</p>
                       </div>
                       <div className="flex">
                         <Button
@@ -408,61 +403,32 @@ export default function EditableEventDetails({
         </div>
       </div>
 
-      {/* Image and Event Details */}
+      {/* Non-editable Image and Event Details */}
       <div>
         <div className="sticky top-4">
-          {event.imagenes?.length ? (
-            <div className="relative aspect-square w-full overflow-hidden rounded-lg mb-4">
-              <img
-                src={event.imagenes[0]}
-                alt={event.nombre_del_evento}
-                className="object-cover w-full h-full"
-              />
+          <div className="relative aspect-square w-full overflow-hidden rounded-lg mb-4">
+            <div className="w-full h-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center">
+              <p className="text-gray-400">Concert Image</p>
             </div>
-          ) : (
-            <div className="relative aspect-square w-full overflow-hidden rounded-lg mb-4">
-              <div className="w-full h-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center">
-                <p className="text-gray-400">No Image Available</p>
-              </div>
-            </div>
-          )}
+          </div>
 
           <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
             <h3 className="font-medium mb-2">Event Details</h3>
             <dl className="space-y-2 text-sm">
               <div>
-                <dt className="text-gray-500">Source</dt>
-                <dd>{event.fuente}</dd>
+                <dt className="text-gray-500">Status</dt>
+                <dd>Upcoming</dd>
               </div>
               <div>
                 <dt className="text-gray-500">Number of Artists</dt>
-                <dd>{event.artistas?.length || 0}</dd>
+                <dd>{event.artist?.length || 0}</dd>
               </div>
               <div>
-                <dt className="text-gray-500">Original URL</dt>
+                <dt className="text-gray-500">Image Source</dt>
                 <dd className="break-all text-xs">
-                  <a
-                    href={event.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-500 hover:underline"
-                  >
-                    {event.url ? "View Event Source" : "Not available"}
-                  </a>
+                  {event.azure_image_url || "Not available"}
                 </dd>
               </div>
-              {event.precios && event.precios.length > 0 && (
-                <div>
-                  <dt className="text-gray-500">Price</dt>
-                  <dd>
-                    {event.precios[0] === -1
-                      ? "Not specified"
-                      : event.precios[0] === 0
-                      ? "Free"
-                      : `$${event.precios[0]}`}
-                  </dd>
-                </div>
-              )}
             </dl>
           </div>
         </div>
