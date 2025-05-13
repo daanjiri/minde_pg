@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
   const limit = searchParams.get("limit") || "6"; // Default limit to 10 if not provided
 
   // Construct the target API URL with offset and limit
-  const targetUrl = `https://pulepia-test.azurewebsites.net/events?offset=${offset}&limit=${limit}`;
+  const targetUrl = `https://afdeteccioneventosdev.azurewebsites.net/api/events?offset=${offset}&limit=${limit}`;
 
   try {
     // Fetch data from the external API on the server-side
@@ -80,7 +80,6 @@ export async function GET(request: NextRequest) {
     const data = (await apiResponse.json()) as
       | EventsResponse
       | { detail?: any };
-
     // Check for potential API-level error structure (like FastAPI validation error)
     if ("detail" in data) {
       console.error("External API Validation Error:", data.detail);

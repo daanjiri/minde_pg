@@ -43,6 +43,8 @@ interface Event {
   timestamp: string;
   otros_campos: Record<string, any>;
   imagenes: string[];
+  hashId: string;
+  esta_en_pulep?: string; // Añadir campo PULEP
 }
 
 // Updated EventsResponse interface (no continuation_token)
@@ -76,10 +78,10 @@ export default function Home() {
           const errorData = await response.json();
           console.error("API Error:", errorData);
           throw new Error(
-            errorData.error || `Failed to fetch events (${response.status})`
+            errorData.error || `Error al obtener eventos (${response.status})`
           );
         } catch (parseError) {
-          throw new Error(`Failed to fetch events (${response.status})`);
+          throw new Error(`Error al obtener eventos (${response.status})`);
         }
       }
       const data: EventsResponse = await response.json();
@@ -92,7 +94,7 @@ export default function Home() {
       // Set the offset state to the one just fetched
       setOffset(newOffset);
     } catch (error) {
-      console.error("Error fetching events:", error);
+      console.error("Error al obtener eventos:", error);
       setHasNextPage(false); // Assume no next page on error
       setEvents([]); // Clear events on error
     } finally {
@@ -118,77 +120,106 @@ export default function Home() {
     }
   };
 
+  // Función para verificar el estado PULEP
+  const getPulepStatus = (event: Event) => {
+    const pulepValue = event.esta_en_pulep || "No";
+    
+    if (!pulepValue || pulepValue === "No") {
+      return { status: "No", className: "text-red-600 font-medium" };
+    } else if (pulepValue.includes("con código")) {
+      return { status: pulepValue, className: "text-green-600 font-medium" };
+    } else {
+      return { status: pulepValue, className: "text-orange-600 font-medium" };
+    }
+  };
+
+  // Función para verificar si un evento está en PULEP
+  const estaEnPulep = (event: Event) => {
+    return event.esta_en_pulep?.toLowerCase().startsWith('sí') || 
+           event.esta_en_pulep?.toLowerCase().startsWith('si');
+  };
+
   return (
     <main className="flex min-h-screen flex-col items-center p-8">
-      <h1 className="text-3xl font-bold mb-8">Concert Events Dashboard</h1>
+      <h1 className="text-3xl font-bold mb-8">Panel de Eventos de Conciertos</h1>
 
-      <div className="w-full max-w-5xl">
-        <Table>
+      <div className="w-full max-w-6xl">
+        <Table className="w-full table-fixed">
           <TableCaption>
-            List of concert events - Page {currentPage}
+            Lista de eventos de conciertos - Página {currentPage}
           </TableCaption>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[100px]">ID</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Artist(s)</TableHead>
-              <TableHead>Title</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="w-[18%]">ID</TableHead>
+              <TableHead className="w-[10%]">Fecha</TableHead>
+              <TableHead className="w-[18%]">Artista(s)</TableHead>
+              <TableHead className="w-[24%]">Título</TableHead>
+              <TableHead className="w-[20%]">PULEP</TableHead>
+              <TableHead className="text-right w-[10%]">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading && (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-10">
-                  Loading events...
+                <TableCell colSpan={6} className="text-center py-10">
+                  Cargando eventos...
                 </TableCell>
               </TableRow>
             )}
             {!loading && events.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-10">
-                  No events found for this page.
+                <TableCell colSpan={6} className="text-center py-10">
+                  No se encontraron eventos para esta página.
                 </TableCell>
               </TableRow>
             )}
             {!loading &&
-              events.map((event) => (
-                <TableRow key={event.id}>
-                  <TableCell className="font-medium">{event.id}</TableCell>
-                  <TableCell>
-                    {event.fechas?.[0]
-                      ? new Date(event.fechas[0]).toLocaleDateString()
-                      : "N/A"}
-                  </TableCell>
-                  <TableCell>
-                    {event.artistas
-                      ? (() => {
-                          const artistText = event.artistas.join(", ");
-                          return artistText.length > 20
-                            ? `${artistText.substring(0, 20)}...`
-                            : artistText;
-                        })()
-                      : "N/A"}
-                  </TableCell>
-                  <TableCell>
-                    {event.nombre_del_evento
-                      ? event.nombre_del_evento.length > 30
-                        ? `${event.nombre_del_evento.substring(0, 30)}...`
-                        : event.nombre_del_evento
-                      : "N/A"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="outline" size="icon" asChild>
-                      <Link href={`/events/${event.otros_campos.hashId}`}>
-                        <Eye className="h-4 w-4" />
-                        <span className="sr-only">
-                          View details for {event.nombre_del_evento}
-                        </span>
-                      </Link>
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+              events.map((event) => {
+                const pulepInfo = getPulepStatus(event);
+                return (
+                  <TableRow 
+                    key={event.id}
+                    className={!estaEnPulep(event) ? "bg-red-100 dark:bg-red-900/30" : ""}
+                  >
+                    <TableCell className="font-medium">{event.id}</TableCell>
+                    <TableCell>
+                      {event.fechas?.[0]
+                        ? new Date(event.fechas[0]).toLocaleDateString()
+                        : "N/A"}
+                    </TableCell>
+                    <TableCell>
+                      {event.artistas
+                        ? (() => {
+                            const artistText = event.artistas.join(", ");
+                            return artistText.length > 20
+                              ? `${artistText.substring(0, 20)}...`
+                              : artistText;
+                          })()
+                        : "N/A"}
+                    </TableCell>
+                    <TableCell>
+                      {event.nombre_del_evento
+                        ? event.nombre_del_evento.length > 30
+                          ? `${event.nombre_del_evento.substring(0, 30)}...`
+                          : event.nombre_del_evento
+                        : "N/A"}
+                    </TableCell>
+                    <TableCell className={pulepInfo.className}>
+                      {pulepInfo.status}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="outline" size="icon" asChild>
+                        <Link href={`/events/${event.hashId}`}>
+                          <Eye className="h-4 w-4" />
+                          <span className="sr-only">
+                            Ver detalles de {event.nombre_del_evento}
+                          </span>
+                        </Link>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
           </TableBody>
         </Table>
 
@@ -209,12 +240,14 @@ export default function Home() {
                       ? "pointer-events-none opacity-50"
                       : ""
                   }
-                />
+                >
+                  Anterior
+                </PaginationPrevious>
               </PaginationItem>
 
               {/* Display Current Page Info */}
               <PaginationItem>
-                <span className="px-4 py-2 text-sm">Page {currentPage}</span>
+                <span className="px-4 py-2 text-sm">Página {currentPage}</span>
               </PaginationItem>
               {/* Example of how ellipsis might be used if total pages were known */}
               {/* {hasNextPage && <PaginationItem><PaginationEllipsis /></PaginationItem>} */}
@@ -232,7 +265,9 @@ export default function Home() {
                       ? "pointer-events-none opacity-50"
                       : ""
                   }
-                />
+                >
+                  Siguiente
+                </PaginationNext>
               </PaginationItem>
             </PaginationContent>
           </Pagination>

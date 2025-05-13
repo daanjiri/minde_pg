@@ -37,20 +37,20 @@ export async function generateMetadata({
 
   try {
     const response = await fetch(
-      `https://pulepia-test.azurewebsites.net/event?hashid=${hashid}`,
+      `https://afdeteccioneventosdev.azurewebsites.net/api/event?hashid=${hashid}`,
       { cache: "no-store" }
     );
     if (!response.ok) {
-      return { title: "Event Details" };
+      return { title: "Detalles del Evento" };
     }
     const event = await response.json();
 
     return {
-      title: event.nombre_del_evento || "Event Details",
+      title: event.nombre_del_evento || "Detalles del Evento",
     };
   } catch (error) {
     console.error("Error fetching event for metadata:", error);
-    return { title: "Event Details" };
+    return { title: "Detalles del Evento" };
   }
 }
 
@@ -65,7 +65,7 @@ export default async function EventPage({
 
   try {
     const response = await fetch(
-      `https://pulepia-test.azurewebsites.net/event?hashid=${hashid}`,
+      `https://afdeteccioneventosdev.azurewebsites.net/api/event?hashid=${hashid}`,
       { cache: "no-store" }
     );
 
@@ -82,7 +82,7 @@ export default async function EventPage({
         <Button variant="ghost" asChild className="mb-6">
           <Link href="/" className="flex items-center">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Events
+            Volver a Eventos
           </Link>
         </Button>
 
