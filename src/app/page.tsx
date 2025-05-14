@@ -123,9 +123,9 @@ export default function Home() {
   // Función para verificar el estado PULEP
   const getPulepStatus = (event: Event) => {
     const pulepValue = event.esta_en_pulep || "No";
-    
+    console.log("pulepValue::", pulepValue);
     if (!pulepValue || pulepValue === "No") {
-      return { status: "No", className: "text-red-600 font-medium" };
+      return { status: "No tiene", className: "text-red-600 font-medium" };
     } else if (pulepValue.includes("con código")) {
       return { status: pulepValue, className: "text-green-600 font-medium" };
     } else {
@@ -150,8 +150,8 @@ export default function Home() {
           </TableCaption>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[18%]">ID</TableHead>
-              <TableHead className="w-[10%]">Fecha</TableHead>
+              <TableHead className="w-[18%]">Identificador</TableHead>
+              <TableHead className="w-[10%]">Fecha Evento</TableHead>
               <TableHead className="w-[18%]">Artista(s)</TableHead>
               <TableHead className="w-[24%]">Título</TableHead>
               <TableHead className="w-[20%]">PULEP</TableHead>
